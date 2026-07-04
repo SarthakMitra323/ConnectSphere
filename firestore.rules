@@ -26,11 +26,17 @@ service cloud.firestore {
 
       allow create: if isSelf(uid)
         && request.resource.data.keys().hasOnly(['username', 'uid', 'email', 'profilePictureUrl', 'contacts', 'unreadChats', 'fcmTokens'])
-        && request.resource.data.uid == request.auth.uid;
+        && request.resource.data.uid is string
+        && request.resource.data.uid.matches('^[0-9]{5}$');
 
       allow update: if signedIn()
         && request.resource.data.keys().hasOnly(['username', 'uid', 'email', 'profilePictureUrl', 'contacts', 'unreadChats', 'fcmTokens'])
-        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid is string
+        && request.resource.data.uid.matches('^[0-9]{5}$')
+        && (
+          request.resource.data.uid == resource.data.uid ||
+          (!resource.data.keys().hasAny(['uid']) && request.resource.data.uid.matches('^[0-9]{5}$'))
+        )
         && (isSelf(uid) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contacts', 'unreadChats', 'profilePictureUrl', 'fcmTokens']));
 
       allow delete: if isSelf(uid);
