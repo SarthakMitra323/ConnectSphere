@@ -637,23 +637,44 @@ function listenForNewMessages(contacts) {
   chatListeners = [];
 
   contacts.forEach(contact => {
-    const normalized = normalizeContact(contact);
-    const chatId = normalized.isGroup ? normalized.groupId : getChatId(currentUser.uid, normalized.userId);
-    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'desc'), limit(1));
-    const unsub = onSnapshot(q, snapshot => {
-      void (async () => {
-        if (!snapshot.empty) {
-          const lastMsg = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-          lastMessages[chatId] = await decryptMessageForDisplay(chatId, lastMsg);
-        } else {
-          lastMessages[chatId] = null;
-        }
+    void (async () => {
+      const normalized = normalizeContact(contact);
+      const chatId = normalized.isGroup ? normalized.groupId : getChatId(currentUser.uid, normalized.userId);
+      const chatDocRef = doc(db, 'chats', chatId);
+      const chatSnapshot = await getDoc(chatDocRef);
+
+      if (!chatSnapshot.exists()) {
+        lastMessages[chatId] = null;
         if (currentUserData) {
           renderContactsList(currentUserData.contacts || [], currentUserData.unreadChats || []);
         }
-      })();
-    });
-    chatListeners.push(unsub);
+        return;
+      }
+
+      const chatData = chatSnapshot.data();
+      const members = chatData.members || [];
+      if (!members.includes(currentUser.uid)) {
+        return;
+      }
+
+      const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'desc'), limit(1));
+      const unsub = onSnapshot(q, snapshot => {
+        void (async () => {
+          if (!snapshot.empty) {
+            const lastMsg = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+            lastMessages[chatId] = await decryptMessageForDisplay(chatId, lastMsg);
+          } else {
+            lastMessages[chatId] = null;
+          }
+          if (currentUserData) {
+            renderContactsList(currentUserData.contacts || [], currentUserData.unreadChats || []);
+          }
+        })();
+      }, error => {
+        console.error('Contact preview listener error:', error);
+      });
+      chatListeners.push(unsub);
+    })();
   });
 }
 
@@ -822,9 +843,9 @@ function renderContactsList(contacts, unreadChats, searchTerm = '') {
     let pressTimer;
     contactEl.addEventListener('touchstart', () => {
       pressTimer = setTimeout(() => openContactActionsModal(contact), 500);
-    });
-    contactEl.addEventListener('touchend', () => clearTimeout(pressTimer));
-    contactEl.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    }, { passive: true });
+    contactEl.addEventListener('touchend', () => clearTimeout(pressTimer), { passive: true });
+    contactEl.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
 
     if (!isGroup) {
       const editBtn = contactEl.querySelector('.edit-contact-btn');
@@ -868,6 +889,14 @@ async function openChat(contactRaw) {
   currentChatId = isGroup ? contact.groupId : getChatId(currentUser.uid, contact.userId);
 
   await updateDoc(doc(db, 'users', currentUser.uid), { unreadChats: arrayRemove(currentChatId) });
+
+  if (!isGroup) {
+    const chatDocRef = doc(db, 'chats', currentChatId);
+    const chatSnapshot = await getDoc(chatDocRef);
+    if (!chatSnapshot.exists()) {
+      await setDoc(chatDocRef, { members: [currentUser.uid, contact.userId], isGroup: false });
+    }
+  }
 
   if (unsubscribeMessages) unsubscribeMessages();
   if (unsubscribeTypingStatus) unsubscribeTypingStatus();
@@ -1013,9 +1042,9 @@ function renderMessage(data) {
   let pressTimer;
   messageDiv.addEventListener('touchstart', () => {
     pressTimer = setTimeout(() => window.showDeleteOptions(data.id, data.senderId), 500);
-  });
-  messageDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-  messageDiv.addEventListener('touchmove', () => clearTimeout(pressTimer));
+  }, { passive: true });
+  messageDiv.addEventListener('touchend', () => clearTimeout(pressTimer), { passive: true });
+  messageDiv.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
 
   messagesContainer.appendChild(messageDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
