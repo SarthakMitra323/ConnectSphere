@@ -99,6 +99,12 @@ function getMemberColor(userId) {
   return memberColors[userId];
 }
 
+function getFallbackUsername(user) {
+  if (user?.displayName) return user.displayName;
+  if (user?.email) return user.email.split('@')[0];
+  return 'User';
+}
+
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -157,7 +163,7 @@ function navigate(pageName) {
 
 function renderLoadingPage() {
   appContainer.innerHTML = `
-    <div class="flex flex-col items-center justify-center h-full bg-gray-50">
+    <div class="flex flex-col items-center justify-center h-full min-h-[var(--app-height)] bg-gray-50">
       <svg class="h-12 w-auto text-indigo-600 mb-4 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       <h1 class="text-2xl font-bold text-gray-900">ConnectSphere</h1>
       <p class="mt-2 text-gray-600">Connecting...</p>
@@ -306,8 +312,8 @@ function renderAuthPage() {
 
 function renderChatPage() {
   appContainer.innerHTML = `
-    <div class="h-full w-full flex bg-white relative">
-      <div id="contacts-panel" class="w-full md:w-1/3 lg:w-1/4 flex flex-col border-r border-gray-200 transition-transform duration-300 ease-in-out md:translate-x-0 bg-white">
+    <div class="page-shell h-[var(--app-height)] w-full overflow-hidden flex bg-white relative">
+      <div id="contacts-panel" class="w-full md:w-80 lg:w-96 flex flex-col min-h-0 shrink-0 border-r border-gray-200 transition-transform duration-300 ease-in-out md:translate-x-0 bg-white">
         <div class="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <div class="flex items-center overflow-hidden">
             <img id="user-profile-pic" src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" class="w-10 h-10 rounded-full mr-3 object-cover flex-shrink-0">
@@ -334,9 +340,9 @@ function renderChatPage() {
         <div class="p-2 sm:p-4 border-b border-gray-200 flex-shrink-0">
           <button id="add-contact-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-200">Add Contact</button>
         </div>
-        <div id="contacts-list" class="flex-grow overflow-y-auto"></div>
+        <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto"></div>
       </div>
-      <div id="chat-panel" class="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-gray-50 absolute md:relative top-0 left-0 h-full transition-transform duration-300 ease-in-out translate-x-full md:translate-x-0">
+      <div id="chat-panel" class="w-full flex-1 min-w-0 min-h-0 flex flex-col bg-gray-50 absolute md:relative top-0 left-0 h-full transition-transform duration-300 ease-in-out translate-x-full md:translate-x-0">
         <div id="chat-placeholder" class="flex flex-col items-center justify-center h-full text-center p-4">
           <svg class="w-24 h-24 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <h2 class="mt-4 text-2xl font-semibold text-gray-800">Welcome to ConnectSphere</h2>
@@ -358,7 +364,7 @@ function renderChatPage() {
               <button id="manage-group-btn" class="px-3 py-1.5 bg-gray-200 text-gray-800 text-sm font-semibold rounded-md hover:bg-gray-300">Manage</button>
             </div>
           </div>
-          <div id="messages-container" class="flex-grow p-2 sm:p-4 overflow-y-auto space-y-2"></div>
+          <div id="messages-container" class="flex-1 min-h-0 p-2 sm:p-4 overflow-y-auto space-y-2"></div>
           <div class="p-2 sm:p-4 bg-white border-t border-gray-200 flex-shrink-0">
             <form id="message-form" class="flex items-center space-x-2 sm:space-x-3">
               <button type="button" id="attach-file-btn" class="p-2 rounded-full hover:bg-gray-200">
@@ -550,9 +556,45 @@ function setupChatPage() {
   let currentContactsJson = '';
 
   const userDocRef = doc(db, 'users', currentUser.uid);
+  currentUserData = currentUserData || {
+    username: getFallbackUsername(currentUser),
+    uid: '...',
+    profilePictureUrl: '',
+    contacts: [],
+    unreadChats: []
+  };
+  updateUIWithUserData(currentUserData);
+
+  getDoc(userDocRef).then(async snapshot => {
+    if (!snapshot.exists()) {
+      const generatedUid = await generateUniqueFiveDigitId();
+      const bootstrapProfile = {
+        username: getFallbackUsername(currentUser),
+        uid: generatedUid,
+        profilePictureUrl: '',
+        contacts: [],
+        unreadChats: []
+      };
+      await setDoc(userDocRef, bootstrapProfile);
+      currentUserData = { id: currentUser.uid, ...bootstrapProfile };
+      updateUIWithUserData(currentUserData);
+    } else if (!snapshot.data().uid) {
+      const generatedUid = await generateUniqueFiveDigitId();
+      await updateDoc(userDocRef, { uid: generatedUid });
+    }
+  }).catch(error => {
+    console.error('Failed to bootstrap user profile:', error);
+  });
+
   unsubscribeUser = onSnapshot(userDocRef, snapshot => {
     if (snapshot.exists()) {
       currentUserData = { id: snapshot.id, ...snapshot.data() };
+      if (!currentUserData.uid) {
+        void (async () => {
+          const generatedUid = await generateUniqueFiveDigitId();
+          await updateDoc(userDocRef, { uid: generatedUid });
+        })();
+      }
       updateUIWithUserData(currentUserData);
       const newContactsJson = JSON.stringify(currentUserData.contacts || []);
       if (newContactsJson !== currentContactsJson) {
@@ -562,6 +604,8 @@ function setupChatPage() {
       sendBtn.disabled = false;
       sendBtn.classList.remove('bg-indigo-300', 'cursor-not-allowed');
       sendBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    } else if (currentUserData) {
+      updateUIWithUserData(currentUserData);
     }
   });
 
@@ -686,15 +730,17 @@ async function sendWelcomeMessage(userId) {
 }
 
 function updateUIWithUserData(data) {
-  document.getElementById('user-username').textContent = sanitizeHTML(data.username);
-  document.getElementById('user-uid').textContent = sanitizeHTML(data.uid);
+  const safeUsername = data?.username || getFallbackUsername(currentUser);
+  const safeUid = data?.uid || '...';
+  document.getElementById('user-username').textContent = sanitizeHTML(safeUsername);
+  document.getElementById('user-uid').textContent = sanitizeHTML(safeUid);
   const profilePic = document.getElementById('user-profile-pic');
-  if (data.profilePictureUrl) {
+  if (data?.profilePictureUrl) {
     profilePic.src = data.profilePictureUrl;
   } else {
-    profilePic.src = `https://placehold.co/40x40/E2E8F0/4A5568?text=${sanitizeHTML(data.username.charAt(0).toUpperCase())}`;
+    profilePic.src = `https://placehold.co/40x40/E2E8F0/4A5568?text=${sanitizeHTML(safeUsername.charAt(0).toUpperCase())}`;
   }
-  renderContactsList(data.contacts || [], data.unreadChats || []);
+  renderContactsList(data?.contacts || [], data?.unreadChats || []);
 }
 
 function renderContactsList(contacts, unreadChats, searchTerm = '') {
@@ -708,7 +754,7 @@ function renderContactsList(contacts, unreadChats, searchTerm = '') {
   });
 
   if (filteredContacts.length === 0) {
-    listElement.innerHTML = `<p class="p-4 text-center text-sm text-gray-500">No contacts found.</p>`;
+    listElement.innerHTML = `<p class="p-4 text-center text-sm text-gray-500">No Contacts</p>`;
     return;
   }
 
@@ -1429,12 +1475,17 @@ function openAddMemberToGroupModal(groupData) {
 }
 
 function openSettingsModal() {
+  const safeCurrentUserData = currentUserData || {
+    username: getFallbackUsername(currentUser),
+    profilePictureUrl: '',
+    uid: '...'
+  };
   const content = `
     <div class="space-y-4 text-left">
       <div>
         <label class="block text-sm font-medium text-gray-700">Profile Picture</label>
         <div class="mt-1 flex items-center space-x-4">
-          <img id="settings-profile-pic-preview" src="${currentUserData.profilePictureUrl || `https://placehold.co/64x64/E2E8F0/4A5568?text=${currentUserData.username.charAt(0).toUpperCase()}`}" class="w-16 h-16 rounded-full object-cover">
+          <img id="settings-profile-pic-preview" src="${safeCurrentUserData.profilePictureUrl || `https://placehold.co/64x64/E2E8F0/4A5568?text=${sanitizeHTML(safeCurrentUserData.username.charAt(0).toUpperCase())}`}" class="w-16 h-16 rounded-full object-cover">
           <input type="file" id="profile-pic-upload" accept="image/*" class="hidden">
           <button id="change-pic-btn" class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50">Change</button>
         </div>
@@ -1442,7 +1493,7 @@ function openSettingsModal() {
       <div class="relative">
         <label for="settings-username" class="block text-sm font-medium text-gray-700">Username</label>
         <span class="absolute top-8 left-0 flex items-center pl-3"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg></span>
-        <input type="text" id="settings-username" value="${escapeAttr(currentUserData.username)}" class="mt-1 block w-full px-3 py-2 pl-10 border rounded-md">
+        <input type="text" id="settings-username" value="${escapeAttr(safeCurrentUserData.username)}" class="mt-1 block w-full px-3 py-2 pl-10 border rounded-md">
       </div>
       <div class="relative">
         <label for="settings-password" class="block text-sm font-medium text-gray-700">New Password</label>
@@ -1466,7 +1517,7 @@ function openSettingsModal() {
       const file = fileInput.files[0];
       let passwordTried = false;
 
-      if (newUsername !== currentUserData.username) {
+      if (newUsername !== safeCurrentUserData.username) {
         await updateDoc(userDocRef, { username: newUsername });
       }
       if (newPassword) {

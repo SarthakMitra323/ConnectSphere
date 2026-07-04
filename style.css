@@ -44,6 +44,7 @@ body[data-page='auth'] {
 
 #app-container {
   min-height: var(--app-height);
+  height: var(--app-height);
 }
 
 .h-screen-dynamic {
@@ -115,6 +116,7 @@ body[data-page='auth'] {
 
 .page-shell {
   min-height: var(--app-height);
+  height: var(--app-height);
 }
 
 .modal-backdrop {
