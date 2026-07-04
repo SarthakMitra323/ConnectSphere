@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function chatDoc(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId));
+    }
+
+    function isChatMember(chatId) {
+      return signedIn() && chatDoc(chatId).data.members.hasAny([request.auth.uid]);
+    }
+
+    function isChatAdmin(chatId) {
+      return signedIn() && chatDoc(chatId).data.admins.hasAny([request.auth.uid]);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['username', 'uid', 'email', 'profilePictureUrl', 'contacts', 'unreadChats', 'fcmTokens'])
+        && request.resource.data.uid == request.auth.uid;
+
+      allow update: if signedIn()
+        && request.resource.data.keys().hasOnly(['username', 'uid', 'email', 'profilePictureUrl', 'contacts', 'unreadChats', 'fcmTokens'])
+        && request.resource.data.uid == resource.data.uid
+        && (isSelf(uid) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['contacts', 'unreadChats', 'profilePictureUrl', 'fcmTokens']));
+
+      allow delete: if isSelf(uid);
+    }
+
+    match /chats/{chatId} {
+      allow read: if isChatMember(chatId);
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['groupName', 'members', 'admins', 'createdBy', 'createdAt', 'isGroup', 'profilePictureUrl', 'typing'])
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.members is list
+        && request.resource.data.members.size() >= 2;
+
+      allow update: if isChatMember(chatId)
+        && (
+          (resource.data.isGroup == false) ||
+          isChatAdmin(chatId)
+        );
+
+      allow delete: if isChatAdmin(chatId) || (isChatMember(chatId) && resource.data.isGroup == false);
+
+      match /messages/{messageId} {
+        allow read: if isChatMember(chatId);
+
+        allow create: if isChatMember(chatId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['type', 'senderId', 'senderName', 'timestamp', 'isRead', 'deletedFor', 'encryptedPayload'])
+          && request.resource.data.deletedFor is list
+          && request.resource.data.encryptedPayload is map;
+
+        allow update: if isChatMember(chatId)
+          && request.resource.data.senderId == resource.data.senderId
+          && request.resource.data.type == resource.data.type
+          && request.resource.data.senderName == resource.data.senderName
+          && request.resource.data.timestamp == resource.data.timestamp
+          && request.resource.data.encryptedPayload == resource.data.encryptedPayload
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'deletedFor']);
+
+        allow delete: if request.auth.uid == resource.data.senderId || isChatAdmin(chatId);
+      }
+    }
+  }
+}

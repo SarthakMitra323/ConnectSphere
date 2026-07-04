@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ConnectSphere</title>
+  <meta name="description" content="ConnectSphere is a modern messaging space for fast, secure, meaningful conversations.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hero-glow {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(60px);
+      opacity: 0.85;
+      animation: floaty 10s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .hero-glow.one { width: 22rem; height: 22rem; background: rgba(79, 70, 229, 0.18); top: -4rem; left: -3rem; }
+    .hero-glow.two { width: 18rem; height: 18rem; background: rgba(14, 165, 233, 0.18); bottom: 2rem; right: -2rem; animation-delay: -3s; }
+    .hero-glow.three { width: 14rem; height: 14rem; background: rgba(236, 72, 153, 0.14); top: 8rem; right: 20%; animation-delay: -6s; }
+
+    @keyframes floaty {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(0, -14px, 0) scale(1.04); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 700ms ease, transform 700ms ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(226, 232, 240, 0.78);
+      box-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
+    }
+  </style>
+</head>
+<body class="text-slate-900">
+  <div class="min-h-screen overflow-x-hidden">
+    <div class="relative isolate min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-50">
+      <div class="absolute inset-0 opacity-70" style="background-image: radial-gradient(rgba(148,163,184,0.18) 1px, transparent 1px); background-size: 22px 22px;"></div>
+      <div class="hero-glow one"></div>
+      <div class="hero-glow two"></div>
+      <div class="hero-glow three"></div>
+
+      <header class="relative z-10">
+        <nav class="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
+          <a href="#top" class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-900/20">
+              <span class="text-xl">💬</span>
+            </div>
+            <div>
+              <p class="text-lg font-extrabold tracking-tight">ConnectSphere</p>
+              <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Private messaging</p>
+            </div>
+          </a>
+          <div class="flex items-center gap-3">
+            <a href="auth.html" class="hidden rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 hover:text-slate-900 sm:inline-flex">Sign in</a>
+            <a href="auth.html" class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800">Get started</a>
+          </div>
+        </nav>
+      </header>
+
+      <main id="top" class="relative z-10">
+        <section class="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-16 pt-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:pb-24 lg:pt-12">
+          <div class="max-w-2xl">
+            <div class="reveal inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/75 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+              Designed for focused conversations, not noise
+            </div>
+
+            <h1 class="reveal mt-8 text-5xl font-black tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+              Chat beautifully.
+              <span class="block bg-gradient-to-r from-indigo-600 via-sky-600 to-cyan-500 bg-clip-text text-transparent">Stay private.</span>
+              Move faster.
+            </h1>
+
+            <p class="reveal mt-6 max-w-xl text-lg leading-8 text-slate-600 sm:text-xl">
+              ConnectSphere is a modern messaging space with real-time chat, group rooms, and encrypted message storage so your conversations feel polished and protected.
+            </p>
+
+            <div class="reveal mt-10 flex flex-col gap-4 sm:flex-row">
+              <a href="auth.html" class="inline-flex items-center justify-center rounded-full bg-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:bg-indigo-500">
+                Start free
+              </a>
+              <a href="#features" class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/80 px-7 py-3.5 text-base font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:bg-white">
+                See what it does
+              </a>
+              <a href="auth.html" class="inline-flex items-center justify-center rounded-full px-7 py-3.5 text-base font-semibold text-slate-600 transition hover:text-slate-900">
+                I already have an account
+              </a>
+            </div>
+
+            <dl class="reveal mt-12 grid max-w-xl grid-cols-3 gap-4">
+              <div class="glass-card rounded-2xl p-4 text-center">
+                <dt class="text-xs uppercase tracking-[0.24em] text-slate-500">Realtime</dt>
+                <dd class="mt-2 text-2xl font-extrabold text-slate-950">Fast</dd>
+              </div>
+              <div class="glass-card rounded-2xl p-4 text-center">
+                <dt class="text-xs uppercase tracking-[0.24em] text-slate-500">Rooms</dt>
+                <dd class="mt-2 text-2xl font-extrabold text-slate-950">Groups</dd>
+              </div>
+              <div class="glass-card rounded-2xl p-4 text-center">
+                <dt class="text-xs uppercase tracking-[0.24em] text-slate-500">Security</dt>
+                <dd class="mt-2 text-2xl font-extrabold text-slate-950">Encrypted</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="relative mx-auto w-full max-w-[32rem]">
+            <div class="reveal glass-card relative overflow-hidden rounded-[2rem] p-4 sm:p-6">
+              <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-indigo-600/15 via-sky-500/10 to-transparent"></div>
+              <div class="relative rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <p class="text-sm font-semibold text-indigo-200">ConnectSphere live preview</p>
+                    <p class="text-xs text-slate-400">A calmer, faster chat experience</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="h-3 w-3 rounded-full bg-emerald-400"></span>
+                    <span class="text-xs text-slate-300">Online</span>
+                  </div>
+                </div>
+
+                <div class="mt-5 space-y-3">
+                  <div class="flex justify-start">
+                    <div class="max-w-[80%] rounded-2xl rounded-bl-md bg-white/10 px-4 py-3 text-sm leading-6 text-slate-100">
+                      Planning tonight's launch? Let's keep it sharp and simple.
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="max-w-[80%] rounded-2xl rounded-br-md bg-indigo-500 px-4 py-3 text-sm leading-6 text-white">
+                      Yes. Clean UI, quick replies, and encrypted storage. That's the whole point.
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="max-w-[80%] rounded-2xl rounded-bl-md bg-white/10 px-4 py-3 text-sm leading-6 text-slate-100">
+                      Perfect. Then the product should feel like the conversation itself.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                  <div class="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
+                    <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Primary action</p>
+                    <p class="mt-2 text-lg font-semibold">Join in seconds</p>
+                  </div>
+                  <div class="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
+                    <p class="text-xs uppercase tracking-[0.24em] text-slate-400">Privacy</p>
+                    <p class="mt-2 text-lg font-semibold">Stored encrypted</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="reveal absolute -bottom-6 -left-4 hidden rounded-2xl border border-white/70 bg-white/90 p-4 shadow-xl shadow-slate-900/10 sm:block">
+              <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Best for</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900">Friends, teams, and tight-knit groups</p>
+            </div>
+
+            <div class="reveal absolute -right-2 top-8 hidden rounded-2xl border border-indigo-200 bg-indigo-50/90 p-4 shadow-xl shadow-indigo-900/10 lg:block">
+              <p class="text-xs uppercase tracking-[0.24em] text-indigo-500">Encrypted layer</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900">Messages are protected before storage</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <section id="features" class="mx-auto max-w-7xl px-6 py-20 lg:px-8">
+      <div class="reveal max-w-2xl">
+        <p class="text-sm font-semibold uppercase tracking-[0.28em] text-indigo-600">Why it feels better</p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">A landing page that sells the experience, not just the feature list.</h2>
+        <p class="mt-4 text-lg leading-8 text-slate-600">The design leans on motion, clarity, and high-contrast CTAs so visitors instantly know what to do next.</p>
+      </div>
+
+      <div class="mt-10 grid gap-6 md:grid-cols-3">
+        <article class="reveal glass-card rounded-3xl p-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white">01</div>
+          <h3 class="mt-5 text-xl font-bold text-slate-950">One clear primary action</h3>
+          <p class="mt-3 text-slate-600">The main CTA sends people straight into onboarding, while the secondary path keeps sign-in close at hand.</p>
+        </article>
+        <article class="reveal glass-card rounded-3xl p-6" style="transition-delay: 100ms;">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-600 text-white">02</div>
+          <h3 class="mt-5 text-xl font-bold text-slate-950">Animation with restraint</h3>
+          <p class="mt-3 text-slate-600">Floating glows, soft reveals, and a glass UI give the page movement without turning it into noise.</p>
+        </article>
+        <article class="reveal glass-card rounded-3xl p-6" style="transition-delay: 200ms;">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">03</div>
+          <h3 class="mt-5 text-xl font-bold text-slate-950">Built for trust</h3>
+          <p class="mt-3 text-slate-600">The copy emphasizes encrypted storage, privacy, and real-time messaging from the first scroll.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="px-6 pb-20 lg:px-8">
+      <div class="reveal mx-auto max-w-7xl rounded-[2rem] bg-slate-950 px-6 py-10 text-white shadow-2xl shadow-slate-900/20 sm:px-10 lg:flex lg:items-center lg:justify-between">
+        <div class="max-w-2xl">
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-300">Ready to enter</p>
+          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Open ConnectSphere and start a cleaner chat flow today.</h2>
+          <p class="mt-4 text-slate-300">If the goal is faster conversations with a stronger sense of privacy, this is the cleanest next step.</p>
+        </div>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-0">
+          <a href="auth.html" class="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5">Get started</a>
+          <a href="auth.html" class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">Sign in</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const revealItems = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.14 });
+
+    revealItems.forEach((item, index) => {
+      item.style.transitionDelay = `${Math.min(index * 80, 360)}ms`;
+      observer.observe(item);
+    });
+  </script>
+</body>
+</html>
