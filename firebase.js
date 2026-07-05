@@ -31,12 +31,13 @@ import {
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyD8Il1stHhvl_PgqwoN2-rKZQXut3B-qAY',
-  authDomain: 'connectsphere-web.firebaseapp.com',
-  projectId: 'connectsphere-web',
-  messagingSenderId: '477654366755',
-  appId: '1:477654366755:web:1577289f86ea71c3734f96',
-  measurementId: 'G-4YPV9Y5ZJQ'
+  apiKey: "AIzaSyDjoAFCAxRv0JZXFzogDKac4EFv4EWh86E",
+  authDomain: "connectsphere-db.firebaseapp.com",
+  projectId: "connectsphere-db",
+  storageBucket: "connectsphere-db.firebasestorage.app",
+  messagingSenderId: "172415675184",
+  appId: "1:172415675184:web:628d46549d7fa7ef3cf6f5",
+  measurementId: "G-49SLSX3ZL8"
 };
 
 export const appId = typeof __app_id !== 'undefined' ? __app_id : 'connectsphere-app';

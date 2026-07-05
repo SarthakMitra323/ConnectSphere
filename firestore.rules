@@ -14,11 +14,15 @@ service cloud.firestore {
     }
 
     function isChatMember(chatId) {
-      return signedIn() && chatDoc(chatId).data.members.hasAny([request.auth.uid]);
+      return signedIn()
+          && exists(/databases/$(database)/documents/chats/$(chatId))
+          && request.auth.uid in chatDoc(chatId).data.members;
     }
 
     function isChatAdmin(chatId) {
-      return signedIn() && chatDoc(chatId).data.admins.hasAny([request.auth.uid]);
+      return signedIn()
+          && exists(/databases/$(database)/documents/chats/$(chatId))
+          && request.auth.uid in chatDoc(chatId).data.admins;
     }
 
     function validPublicUid(value) {

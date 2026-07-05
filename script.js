@@ -89,7 +89,20 @@ async function ensureDirectChatDocExists(chatId, contact) {
   const chatDocRef = doc(db, 'chats', chatId);
   const chatSnapshot = await getDoc(chatDocRef);
   if (!chatSnapshot.exists()) {
-    await setDoc(chatDocRef, { members: [currentUser.uid, contact.userId], isGroup: false });
+    try {
+        console.log("Current auth UID:", currentUser.uid);
+        console.log("Contact object:", contact);
+        console.log("Members being stored:", [currentUser.uid, contact.userId]);
+
+        await setDoc(chatDocRef, {
+            members: [currentUser.uid, contact.userId],
+            isGroup: false
+        });
+
+        console.log("✅ Chat document created");
+    } catch (e) {
+        console.error("❌ setDoc failed:", e);
+    }
   }
   return chatDocRef;
 }
