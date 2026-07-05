@@ -46,6 +46,7 @@ let unsubscribeMessages = null;
 let unsubscribeChat = null;
 let unsubscribeTypingStatus = null;
 let typingTimeout = null;
+let currentChatReady = false;
 let lastMessageDate = null;
 let chatListeners = [];
 let lastMessages = {};
@@ -81,6 +82,20 @@ function normalizeContact(contact = {}) {
 
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join('_');
+}
+
+async function ensureDirectChatDocExists(chatId, contact) {
+  if (!chatId || !contact || contact.isGroup) return null;
+  const chatDocRef = doc(db, 'chats', chatId);
+  const chatSnapshot = await getDoc(chatDocRef);
+  if (!chatSnapshot.exists()) {
+    await setDoc(chatDocRef, { members: [currentUser.uid, contact.userId], isGroup: false });
+  }
+  return chatDocRef;
+}
+
+function isSystemBotUser(userId) {
+  return userId === 'connectsphere_bot';
 }
 
 function getFormattedDate(date) {
@@ -440,7 +455,9 @@ async function setupFirebaseMessaging() {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       const vapidKey = 'BIDvpY18PX6oCjKnSJruCodvahMleeNbEkUM0LPAn-eWCDFXTbFx6_s014b9_jwshkDsjzuHsaeZbyoDEcfqbu4';
-      const currentToken = await getToken(messaging, { vapidKey });
+      const swUrl = new URL('firebase-messaging-sw.js', window.location.href);
+      const serviceWorkerRegistration = await navigator.serviceWorker.register(swUrl);
+      const currentToken = await getToken(messaging, { vapidKey, serviceWorkerRegistration });
       if (currentToken) {
         await saveFcmToken(currentToken);
       }
@@ -550,6 +567,7 @@ function setupAuthForm() {
 
 function setupChatPage() {
   if (!currentUser) return;
+  currentChatReady = false;
 
   const messageInput = document.getElementById('message-input');
   const sendBtn = document.getElementById('send-btn');
@@ -679,7 +697,8 @@ function listenForNewMessages(contacts) {
 }
 
 async function handleTyping() {
-  if (!currentChatId || (currentContact && currentContact.isGroup)) return;
+  if (!currentChatReady || !currentChatId || (currentContact && currentContact.isGroup)) return;
+  await ensureDirectChatDocExists(currentChatId, currentContact);
   const chatDocRef = doc(db, 'chats', currentChatId);
   await setDoc(chatDocRef, { typing: { [currentUser.uid]: true } }, { merge: true });
   if (typingTimeout) clearTimeout(typingTimeout);
@@ -866,6 +885,7 @@ function renderContactsList(contacts, unreadChats, searchTerm = '') {
 async function openChat(contactRaw) {
   const contact = normalizeContact(contactRaw);
   currentContact = contact;
+  currentChatReady = false;
   lastMessageDate = null;
   document.getElementById('contacts-panel').classList.add('-translate-x-full');
   document.getElementById('chat-panel').classList.remove('translate-x-full');
@@ -891,11 +911,7 @@ async function openChat(contactRaw) {
   await updateDoc(doc(db, 'users', currentUser.uid), { unreadChats: arrayRemove(currentChatId) });
 
   if (!isGroup) {
-    const chatDocRef = doc(db, 'chats', currentChatId);
-    const chatSnapshot = await getDoc(chatDocRef);
-    if (!chatSnapshot.exists()) {
-      await setDoc(chatDocRef, { members: [currentUser.uid, contact.userId], isGroup: false });
-    }
+    await ensureDirectChatDocExists(currentChatId, contact);
   }
 
   if (unsubscribeMessages) unsubscribeMessages();
@@ -933,6 +949,8 @@ async function openChat(contactRaw) {
       }
     });
   }
+
+  currentChatReady = true;
 }
 
 async function markMessagesAsRead() {
@@ -1126,9 +1144,14 @@ async function sendMessage(content, type = 'text') {
   const recipients = members.filter(id => id !== currentUser.uid);
   if (recipients.length > 0) {
     const batch = writeBatch(db);
-    recipients.forEach(userId => {
-      batch.update(doc(db, 'users', userId), { unreadChats: arrayUnion(currentChatId) });
-    });
+    for (const userId of recipients) {
+      if (isSystemBotUser(userId)) continue;
+      const recipientRef = doc(db, 'users', userId);
+      const recipientSnap = await getDoc(recipientRef);
+      if (recipientSnap.exists()) {
+        batch.update(recipientRef, { unreadChats: arrayUnion(currentChatId) });
+      }
+    }
     await batch.commit();
   }
 }

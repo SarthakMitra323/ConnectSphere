@@ -79,7 +79,13 @@ service cloud.firestore {
         allow read: if isChatMember(chatId);
 
         allow create: if isChatMember(chatId)
-          && request.resource.data.senderId == request.auth.uid
+          && (
+            request.resource.data.senderId == request.auth.uid ||
+            (
+              request.resource.data.senderId == 'connectsphere_bot' &&
+              chatDoc(chatId).data.members.hasAny(['connectsphere_bot'])
+            )
+          )
           && request.resource.data.keys().hasOnly(['type', 'senderId', 'senderName', 'timestamp', 'isRead', 'deletedFor', 'encryptedPayload'])
           && request.resource.data.deletedFor is list
           && request.resource.data.encryptedPayload is map;
