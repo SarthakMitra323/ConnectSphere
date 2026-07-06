@@ -993,7 +993,10 @@ function closeChatOnMobile() {
 function renderMessage(data) {
   const messagesContainer = document.getElementById('messages-container');
   if (data.timestamp) {
-    const messageDate = data.timestamp.toDate();
+    const messageDate =
+      data.timestamp?.toDate
+          ? data.timestamp.toDate()
+          : new Date(data.timestamp);
     if (!lastMessageDate || messageDate.toDateString() !== lastMessageDate.toDateString()) {
       const dateDivider = document.createElement('div');
       dateDivider.className = 'text-center my-2';
@@ -1100,27 +1103,39 @@ async function encryptMessagePayload(chatId, messageData) {
 async function sendMessageToChat(chatId, senderUid, recipientUid, messageData) {
   const chatDocRef = doc(db, 'chats', chatId);
   const chatDoc = await getDoc(chatDocRef);
-  const members = chatDoc.exists() ? (chatDoc.data().members || []) : [senderUid, recipientUid];
+
+  const members = chatDoc.exists()
+    ? (chatDoc.data().members || [])
+    : [senderUid, recipientUid];
+
   if (!chatDoc.exists()) {
-    await setDoc(chatDocRef, { members, isGroup: false });
+    await setDoc(chatDocRef, {
+      members,
+      isGroup: false
+    });
   }
 
+  // DO NOT include timestamp in encrypted payload
   const payload = {
-    ...messageData,
-    deletedFor: messageData.deletedFor || []
+    type: messageData.type,
+    text: messageData.text,
+    imageUrl: messageData.imageUrl
   };
+
   const encryptedPayload = await encryptMessagePayload(chatId, payload);
+
   const storeData = {
-    type: payload.type,
-    senderId: payload.senderId,
-    senderName: payload.senderName,
-    timestamp: payload.timestamp,
-    isRead: payload.isRead ?? false,
-    deletedFor: payload.deletedFor,
+    senderId: messageData.senderId,
+    senderName: messageData.senderName,
+    timestamp: serverTimestamp(),   // <-- stored separately
+    type: messageData.type,
+    isRead: false,
+    deletedFor: [],
     encryptedPayload
   };
 
-  await addDoc(collection(chatDocRef, 'messages'), storeData);
+  await addDoc(collection(chatDocRef, "messages"), storeData);
+
   return storeData;
 }
 
