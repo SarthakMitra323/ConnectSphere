@@ -992,93 +992,225 @@ function closeChatOnMobile() {
 
 function renderMessage(data) {
   const messagesContainer = document.getElementById('messages-container');
+
+  // ---------- Handle Timestamp Safely ----------
+  let messageDate = null;
+
   if (data.timestamp) {
-    const messageDate =
-      data.timestamp?.toDate
-          ? data.timestamp.toDate()
-          : new Date(data.timestamp);
-    if (!lastMessageDate || messageDate.toDateString() !== lastMessageDate.toDateString()) {
-      const dateDivider = document.createElement('div');
-      dateDivider.className = 'text-center my-2';
-      dateDivider.innerHTML = `<span class="bg-gray-200 text-xs text-gray-500 px-2 py-1 rounded-full">${getFormattedDate(messageDate)}</span>`;
-      messagesContainer.appendChild(dateDivider);
-      lastMessageDate = messageDate;
+    try {
+      if (typeof data.timestamp.toDate === "function") {
+        messageDate = data.timestamp.toDate();
+      } else if (data.timestamp instanceof Date) {
+        messageDate = data.timestamp;
+      } else if (data.timestamp.seconds !== undefined) {
+        messageDate = new Date(data.timestamp.seconds * 1000);
+      } else {
+        messageDate = new Date(data.timestamp);
+      }
+
+      if (!isNaN(messageDate.getTime())) {
+        if (
+          !lastMessageDate ||
+          messageDate.toDateString() !== lastMessageDate.toDateString()
+        ) {
+          const dateDivider = document.createElement("div");
+          dateDivider.className = "text-center my-2";
+          dateDivider.innerHTML = `
+            <span class="bg-gray-200 text-xs text-gray-500 px-2 py-1 rounded-full">
+              ${getFormattedDate(messageDate)}
+            </span>
+          `;
+          messagesContainer.appendChild(dateDivider);
+          lastMessageDate = messageDate;
+        }
+      }
+    } catch (err) {
+      console.error("Timestamp error:", err, data.timestamp);
     }
   }
 
+  // ---------- Remove old message if exists ----------
   const existing = document.getElementById(data.id);
   if (existing) existing.remove();
-  const isSent = data.senderId === currentUser.uid;
-  const messageDiv = document.createElement('div');
-  messageDiv.id = data.id;
-  messageDiv.className = `message-container flex items-end ${isSent ? 'justify-end' : 'justify-start'}`;
 
-  let contentHTML = '';
-  if (data.type === 'image') {
+  const isSent = data.senderId === currentUser.uid;
+
+  const messageDiv = document.createElement("div");
+  messageDiv.id = data.id;
+  messageDiv.className = `message-container flex items-end ${
+    isSent ? "justify-end" : "justify-start"
+  }`;
+
+  // ---------- Message Content ----------
+  let contentHTML = "";
+
+  if (data.type === "image") {
     contentHTML = `
       <div class="space-y-2">
         <div class="relative overflow-hidden rounded-2xl bg-slate-100 shadow-sm">
-          <div data-message-placeholder="${data.id}" class="flex min-h-40 min-w-56 items-center justify-center px-6 py-10 text-sm text-slate-500">Loading image...</div>
+          <div data-message-placeholder="${data.id}" class="flex min-h-40 min-w-56 items-center justify-center px-6 py-10 text-sm text-slate-500">
+            Loading image...
+          </div>
+
           <a href="#" target="_blank" rel="noopener noreferrer" class="block">
-            <img data-message-image="${data.id}" alt="Sent image" class="hidden max-h-80 w-auto max-w-xs object-cover">
+            <img
+              data-message-image="${data.id}"
+              alt="Sent image"
+              class="hidden max-h-80 w-auto max-w-xs object-cover">
           </a>
         </div>
       </div>
     `;
-  } else if (data.type === 'text' && data.text) {
-    contentHTML = `<p class="text-sm text-black break-words">${sanitizeHTML(data.text)}</p>`;
+  } else if (data.type === "text" && data.text) {
+    contentHTML = `
+      <p class="text-sm text-black break-words">
+        ${sanitizeHTML(data.text)}
+      </p>
+    `;
   } else if (data.encryptedPayload) {
-    contentHTML = `<p class="text-sm text-gray-500 break-words">Encrypted message</p>`;
+    contentHTML = `
+      <p class="text-sm text-gray-500 break-words">
+        Encrypted message
+      </p>
+    `;
   } else {
-    contentHTML = `<p class="text-sm text-black break-words">${sanitizeHTML(data.text || '')}</p>`;
+    contentHTML = `
+      <p class="text-sm text-black break-words">
+        ${sanitizeHTML(data.text || "")}
+      </p>
+    `;
   }
 
-  let timestampHTML = '';
-  if (data.timestamp) {
-    const time = new Date(data.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const ticks = isSent && !currentContact.isGroup ? `<span class="ticks ml-1 ${data.isRead ? 'tick-seen' : 'tick-delivered'}">${data.isRead ? '✓✓' : '✓'}</span>` : '';
-    timestampHTML = `<p class="text-xs text-right mt-1 text-gray-500 flex items-center justify-end">${time}${ticks}</p>`;
+  // ---------- Timestamp ----------
+  let timestampHTML = "";
+
+  if (messageDate) {
+    const time = messageDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const ticks =
+      isSent && !currentContact.isGroup
+        ? `<span class="ticks ml-1 ${
+            data.isRead ? "tick-seen" : "tick-delivered"
+          }">${data.isRead ? "✓✓" : "✓"}</span>`
+        : "";
+
+    timestampHTML = `
+      <p class="text-xs text-right mt-1 text-gray-500 flex items-center justify-end">
+        ${time}${ticks}
+      </p>
+    `;
   }
 
-  const deleteButton = `<button class="delete-btn p-1" onclick="window.showDeleteOptions('${data.id}', '${data.senderId}')"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
-  const senderNameHTML = (currentContact.isGroup && !isSent) ? `<p class="text-xs font-bold mb-1" style="color: ${getMemberColor(data.senderId)}">${sanitizeHTML(data.senderName || 'Unknown User')}</p>` : '';
-
-  messageDiv.innerHTML = `
-    ${isSent ? deleteButton : ''}
-    <div class="flex flex-col ${isSent ? 'items-end' : 'items-start'}">
-      ${senderNameHTML}
-      <div class="max-w-[80%] sm:max-w-xs lg:max-w-md px-3 py-2 rounded-xl ${isSent ? 'chat-bubble-sent' : 'chat-bubble-received'}">
-        ${contentHTML}
-        ${timestampHTML}
-      </div>
-    </div>
-    ${!isSent ? deleteButton : ''}
+  // ---------- Delete Button ----------
+  const deleteButton = `
+    <button class="delete-btn p-1"
+      onclick="window.showDeleteOptions('${data.id}','${data.senderId}')">
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
+        viewBox="0 0 24 24">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+        </path>
+      </svg>
+    </button>
   `;
 
-  if (data.type === 'image') {
-    const imageElement = messageDiv.querySelector(`[data-message-image="${data.id}"]`);
-    const placeholder = messageDiv.querySelector(`[data-message-placeholder="${data.id}"]`);
+  // ---------- Group Sender Name ----------
+  const senderNameHTML =
+    currentContact.isGroup && !isSent
+      ? `
+        <p class="text-xs font-bold mb-1"
+           style="color:${getMemberColor(data.senderId)}">
+          ${sanitizeHTML(data.senderName || "Unknown User")}
+        </p>
+      `
+      : "";
+
+  // ---------- Build Bubble ----------
+  messageDiv.innerHTML = `
+    ${isSent ? deleteButton : ""}
+
+    <div class="flex flex-col ${isSent ? "items-end" : "items-start"}">
+
+      ${senderNameHTML}
+
+      <div class="max-w-[80%] sm:max-w-xs lg:max-w-md px-3 py-2 rounded-xl ${
+        isSent ? "chat-bubble-sent" : "chat-bubble-received"
+      }">
+
+        ${contentHTML}
+
+        ${timestampHTML}
+
+      </div>
+    </div>
+
+    ${!isSent ? deleteButton : ""}
+  `;
+
+  // ---------- Load Image ----------
+  if (data.type === "image") {
+    const imageElement = messageDiv.querySelector(
+      `[data-message-image="${data.id}"]`
+    );
+
+    const placeholder = messageDiv.querySelector(
+      `[data-message-placeholder="${data.id}"]`
+    );
+
     if (imageElement) {
-      const imageSource = data.imageUrl || '';
-      const imageLink = imageElement.closest('a');
-      if (imageLink) {
-        imageLink.href = imageSource;
-      }
-      imageElement.addEventListener('load', () => placeholder?.remove(), { once: true });
-      imageElement.addEventListener('error', () => {
-        if (placeholder) placeholder.textContent = 'Image unavailable';
-      }, { once: true });
+      const imageSource = data.imageUrl || "";
+
+      const imageLink = imageElement.closest("a");
+      if (imageLink) imageLink.href = imageSource;
+
+      imageElement.addEventListener(
+        "load",
+        () => placeholder?.remove(),
+        { once: true }
+      );
+
+      imageElement.addEventListener(
+        "error",
+        () => {
+          if (placeholder) placeholder.textContent = "Image unavailable";
+        },
+        { once: true }
+      );
+
       imageElement.src = imageSource;
-      imageElement.classList.remove('hidden');
+      imageElement.classList.remove("hidden");
     }
   }
 
+  // ---------- Long Press ----------
   let pressTimer;
-  messageDiv.addEventListener('touchstart', () => {
-    pressTimer = setTimeout(() => window.showDeleteOptions(data.id, data.senderId), 500);
-  }, { passive: true });
-  messageDiv.addEventListener('touchend', () => clearTimeout(pressTimer), { passive: true });
-  messageDiv.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+
+  messageDiv.addEventListener(
+    "touchstart",
+    () => {
+      pressTimer = setTimeout(() => {
+        window.showDeleteOptions(data.id, data.senderId);
+      }, 500);
+    },
+    { passive: true }
+  );
+
+  messageDiv.addEventListener(
+    "touchend",
+    () => clearTimeout(pressTimer),
+    { passive: true }
+  );
+
+  messageDiv.addEventListener(
+    "touchmove",
+    () => clearTimeout(pressTimer),
+    { passive: true }
+  );
 
   messagesContainer.appendChild(messageDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
