@@ -1683,8 +1683,17 @@ function openSettingsModal() {
 
 function renderChatMessagesDecrypted(chatId, snapshot) {
   return Promise.all(snapshot.docs.map(async messageDoc => {
-    const data = { id: messageDoc.id, ...messageDoc.data() };
-    return decryptMessageForDisplay(chatId, data);
+
+    const raw = messageDoc.data();
+
+    console.log("RAW MESSAGE:", raw);
+    console.log("TIMESTAMP:", raw.timestamp);
+    console.log("TIMESTAMP TYPE:", raw.timestamp?.constructor?.name);
+
+    return decryptMessageForDisplay(chatId, {
+      id: messageDoc.id,
+      ...raw
+    });
   }));
 }
 
